@@ -11,9 +11,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const HomePage(),
+      home: HomePage(),
     );
   }
 }
@@ -26,10 +26,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  Future<List<dynamic>> getData() async {
+  Future<List<dynamic>> fetchData() async {
+    const String url = 'http://10.0.2.2/crudFlutter/getData.php';
+    
     try {
-      final response =
-          await http.get(Uri.parse('http://10.0.2.2/crudFlutter/getData.php'));
+      final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body) ?? [];
@@ -45,40 +46,33 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("My Store"),
-      ),
+      appBar: AppBar(title: const Text("My Store")),
       body: FutureBuilder<List<dynamic>>(
-        future: getData(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return const Center(child: Text("Error loading data"));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("No data available"));
-          } else {
-            return ItemList(list: snapshot.data!);
-          }
-        },
+        future: fetchData(),
+        builder: (context, snapshot) => snapshot.connectionState == ConnectionState.waiting
+            ? const Center(child: CircularProgressIndicator())
+            : (snapshot.hasError || snapshot.data == null || snapshot.data!.isEmpty)
+                ? const Center(child: Text("No data available"))
+                : ItemList(items: snapshot.data!),
       ),
     );
   }
 }
 
 class ItemList extends StatelessWidget {
-  final List<dynamic> list;
+  final List<dynamic> items;
 
-  const ItemList({super.key, required this.list});
+  const ItemList({super.key, required this.items});
 
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      itemCount: list.length,
-      itemBuilder: (context, i) {
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
         return ListTile(
-          title: Text(list[i]["item_name"] ?? "No name"),
-          subtitle: Text("Price: ${list[i]["price"]}"),
+          title: Text(item["item_name"] ?? "No name"),
+          subtitle: Text("Price: ${item["price"]}"),
         );
       },
     );
